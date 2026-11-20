@@ -323,7 +323,8 @@ def hud(cr, t):
     labels = [("mot", "MOTIVATION"), ("dis", "DISCIPLINE"), ("obs", "OBSESSION")]
     for who, nm in labels:
         x = COLS[who] + 40
-        shadow_text(cr, nm, x, 722, 36, COL[who], a, track=3)
+        cr.set_source_rgba(0.08, 0.06, 0.1, 0.72 * a); rrect(cr, x - 150, 696, 300, 54, 27); cr.fill()
+        text(cr, nm, x, 722, 34, COL[who], a, track=3)
     # status tags (pop in above the names)
     m, d, o = COLS["mot"] + 40, COLS["dis"] + 40, COLS["obs"] + 40
     tag(cr, "LET'S GO!", m, 632, COL["mot"], 0.8, 3.0, t)
