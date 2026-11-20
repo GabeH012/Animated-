@@ -1,0 +1,26 @@
+{
+  "name": "hurricane",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "stills": "node scripts/stills.mjs",
+    "preview": "node scripts/render.mjs preview",
+    "render": "node scripts/render.mjs final",
+    "render:gpu": "remotion render src/index.ts NukeHurricane out/nuke-hurricane-4K.mp4 --scale=2 --gl=angle --image-format=png --crf=16 --pixel-format=yuv420p"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@remotion/bundler": "^4.0.376",
+    "@remotion/cli": "^4.0.376",
+    "@remotion/renderer": "^4.0.376",
+    "@types/react": "^19.1.8",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "remotion": "^4.0.376",
+    "typescript": "^5.8.3"
+  },
+  "type": "module"
+}
