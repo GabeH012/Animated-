@@ -10,7 +10,7 @@ Usage: python3 story2.py  -> out/show_up.mp4 (1080x1920, 20 s, 30 fps)
 import math, os, random, subprocess, wave
 import numpy as np
 import cairo
-from render import (lerp, clamp, ease, ease_out, ik, skeleton, rrect,
+from render import (lerp, clamp, ease, ease_out, ik, skeleton, rrect, text, FONT_BOLD,
                     HEAD_R, NECK, TORSO, UA, FA, TH, SH, COL)
 
 W, H, FPS, DUR = 1080, 1920, 30, 20.0
@@ -550,6 +550,26 @@ def scene_mountain(cr, t):
     vignette(cr, 0.55)
 
 # ================================================================ compose
+# ================================================================ titles
+TITLES = [  # (text, color, x, y, size, t_in, t_out)
+    ("THE FALL.", (1, 1, 1), W / 2, 200, 70, 0.3, 1.8),
+    ("WALKS PAST.", GRAY, W / 2, 200, 70, 2.0, 4.4),
+    ("STOPS FOR YOU.", TEAL, W / 2, 200, 70, 4.7, 6.8),
+    ("WATERS ONCE", AMB, 270, 200, 46, 7.0, 13.4),
+    ("WATERS DAILY", TEAL, 810, 200, 46, 7.0, 13.4),
+    ("THE STORM.", (1, 1, 1), W / 2, 200, 70, 13.6, 16.9),
+    ("THE SUMMIT.", (1, 0.92, 0.7), W / 2, 200, 70, 17.1, 18.4),
+    ("BRING THEM WITH YOU.", TEAL, W / 2, 200, 58, 18.6, 20.0),
+]
+
+def titles(cr, t):
+    for s, col, x, y, size, t0, t1 in TITLES:
+        if not (t0 <= t <= t1): continue
+        a = clamp((t - t0) / 0.3) * clamp((t1 - t) / 0.3)
+        sc = lerp(1.15, 1.0, ease_out((t - t0) / 0.35))
+        text(cr, s, x + 3, y + 4, size, (0, 0, 0), a * 0.4, track=5, scale=sc)
+        text(cr, s, x, y, size, col, a, track=5, scale=sc)
+
 def frame(t):
     surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, W, H)
     cr = cairo.Context(surf)
@@ -562,6 +582,7 @@ def frame(t):
         layer = cairo.ImageSurface(cairo.FORMAT_ARGB32, W, H)
         fn(cairo.Context(layer), t - a)
         cr.set_source_surface(layer); cr.paint_with_alpha(alpha)
+    titles(cr, t)
     if t < 0.4:  # fade in / out
         cr.set_source_rgba(0, 0, 0, 1 - t / 0.4); cr.paint()
     if t > DUR - 0.6:

@@ -10,7 +10,7 @@ Usage: python3 story3.py -> out/greenhouse.mp4 (1080x1920, 16 s, 30 fps)
 import math, os, random, subprocess, wave
 import numpy as np
 import cairo
-from render import lerp, clamp, ease, ease_out, rrect, COL
+from render import lerp, clamp, ease, ease_out, ease_back, rrect, COL, text, FONT_BOLD
 from story2 import (walk, stand, sit_phone, celebrate, blend, set_hand, fig, can, phone,
                     drops, sky_day, grad, vignette, heart)
 
@@ -286,6 +286,56 @@ def scene(cr, t):
         cr.set_source_rgba(0.05, 0.06, 0.18, dark); cr.paint(); cr.restore()
     vignette(cr, 0.45)
 
+# ---------------------------------------------------------------- titles
+def shadow_text(cr, s, x, y, size, col, a, **kw):
+    text(cr, s, x + 3, y + 4, size, (0, 0, 0), a * 0.35, **kw)
+    text(cr, s, x, y, size, col, a, **kw)
+
+def tag(cr, s, x, y, col, t0, t1, t):
+    if not (t0 <= t <= t1): return
+    k = ease_back((t - t0) / 0.3) * clamp((t1 - t) / 0.2)
+    if k <= 0.01: return
+    cr.save(); cr.translate(x, y); cr.scale(k, k)
+    cr.select_font_face(FONT_BOLD, 0, 1); cr.set_font_size(30)
+    tw = cr.text_extents(s).x_advance + len(s) * 2
+    cr.set_source_rgba(*col, 0.95); rrect(cr, -tw / 2 - 20, -26, tw + 40, 52, 26); cr.fill()
+    cr.restore()
+    text(cr, s, x, y, 30 * k, (0.1, 0.07, 0.08), clamp(k), font=FONT_BOLD, track=2)
+
+def chapter(t):
+    e, dp = daylight(t)
+    if t < T_LAPSE0: return "PLANTING DAY", 1
+    if t < T_LAPSE1: return "THE LONG WAIT", 1 + int(round(29 * dp / ((T_LAPSE1 - T_LAPSE0) / DAYP)))
+    return "THE RESULT", 30
+
+def hud(cr, t):
+    a = clamp((t - 0.3) / 0.4)
+    name, day = chapter(t)
+    # chapter title swaps with a quick fade around the boundaries
+    fade = 1.0
+    for b in (T_LAPSE0, T_LAPSE1):
+        if abs(t - b) < 0.2: fade = abs(t - b) / 0.2
+    g = cairo.LinearGradient(0, 0, 0, 260)
+    g.add_color_stop_rgba(0, 0.05, 0.03, 0.06, 0.55 * a); g.add_color_stop_rgba(1, 0.05, 0.03, 0.06, 0)
+    cr.set_source(g); cr.rectangle(0, 0, W, 260); cr.fill()
+    shadow_text(cr, name + ".", W / 2, 78, 62, (1, 1, 1), a * fade, track=5)
+    shadow_text(cr, f"DAY {day}", W / 2, 136, 32, (1, 0.95, 0.85), a * 0.85, font=FONT_BOLD, track=6)
+    labels = [("mot", "MOTIVATION"), ("dis", "DISCIPLINE"), ("obs", "OBSESSION")]
+    for who, nm in labels:
+        x = COLS[who] + 40
+        shadow_text(cr, nm, x, 722, 36, COL[who], a, track=3)
+    # status tags (pop in above the names)
+    m, d, o = COLS["mot"] + 40, COLS["dis"] + 40, COLS["obs"] + 40
+    tag(cr, "LET'S GO!", m, 632, COL["mot"], 0.8, 3.0, t)
+    tag(cr, "LATER...", m, 632, COL["mot"], 5.6, 9.0, t)
+    tag(cr, "DRIED UP.", m, 632, COL["mot"], 10.6, 16, t)
+    tag(cr, "ONE CAN.", d, 632, COL["dis"], 1.4, 3.6, t)
+    tag(cr, "EVERY DAY.", d, 632, COL["dis"], 5.0, 12.4, t)
+    tag(cr, "BLOOMED.", d, 632, COL["dis"], 13.2, 16, t)
+    tag(cr, "MORE!", o, 632, COL["obs"], 0.8, 3.6, t)
+    tag(cr, "TOO MUCH!", o, 632, COL["obs"], 5.0, 9.4, t)
+    tag(cr, "DROWNED.", o, 632, COL["obs"], 11.6, 16, t)
+
 def frame(t):
     surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, W, H); cr = cairo.Context(surf)
     cr.set_source_rgb(0, 0, 0); cr.paint()
@@ -293,6 +343,7 @@ def frame(t):
     fx, fy = COLS["dis"] + 70, 900
     cr.save(); cr.translate(fx, fy); cr.scale(z, z); cr.translate(-fx, -fy)
     scene(cr, t); cr.restore()
+    hud(cr, t)
     if t < 0.4: cr.set_source_rgba(0, 0, 0, 1 - t / 0.4); cr.paint()
     if t > DUR - 0.6: cr.set_source_rgba(0, 0, 0, clamp((t - DUR + 0.6) / 0.6)); cr.paint()
     return surf
